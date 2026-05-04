@@ -20,10 +20,9 @@ import {
   SelectLabel,
   SelectSeparator,
 } from "@/components/ui/select"
+import { loadAssignee } from "@/services/StorageService"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const ASSIGNEE_KEY = "task-tracker-assignee"
 
 function getCurrentWeekRange(): { from: string; to: string } {
   const now = new Date()
@@ -211,7 +210,7 @@ export function ViewToolbar() {
 
   // ── View selector ──────────────────────────────────────────────────────────
 
-  function handleViewChange(id: string) {
+  async function handleViewChange(id: string) {
     setActiveView(id)
     const view = savedViews.find((v) => v.id === id)
     if (!view) return
@@ -224,7 +223,7 @@ export function ViewToolbar() {
       const { from, to } = getCurrentWeekRange()
       filters = { ...filters, dueDateRange: { from, to } }
     } else if (id === "view-my-tasks") {
-      const assignee = localStorage.getItem(ASSIGNEE_KEY)
+      const assignee = await loadAssignee()
       if (assignee) {
         filters = { ...filters, assignees: [assignee] }
       }

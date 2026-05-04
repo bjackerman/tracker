@@ -7,17 +7,24 @@ import TagList from "@/components/sidebar/TagList"
 import { ImportExportPanel } from "@/components/io/ImportExportPanel"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
-const ASSIGNEE_KEY = "task-tracker-assignee"
+import { loadAssignee, saveAssignee } from "@/services/StorageService"
 
 export default function Sidebar() {
   const selectedProjectId = useTrackerStore((s) => s.selectedProjectId)
   const setSelectedProject = useTrackerStore((s) => s.setSelectedProject)
   const setActiveFilters = useTrackerStore((s) => s.setActiveFilters)
 
-  const [myName, setMyName] = React.useState<string>(
-    () => localStorage.getItem(ASSIGNEE_KEY) ?? ""
-  )
+  const [myName, setMyName] = React.useState<string>("")
+
+  React.useEffect(() => {
+    let active = true
+    void loadAssignee().then((value) => {
+      if (active && value) setMyName(value)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   function handleAllTasks() {
     setSelectedProject(null)
@@ -27,11 +34,7 @@ export default function Sidebar() {
   function handleMyNameChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value
     setMyName(value)
-    if (value.trim()) {
-      localStorage.setItem(ASSIGNEE_KEY, value.trim())
-    } else {
-      localStorage.removeItem(ASSIGNEE_KEY)
-    }
+    void saveAssignee(value)
   }
 
   return (
