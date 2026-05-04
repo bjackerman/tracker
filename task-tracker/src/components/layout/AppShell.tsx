@@ -1,5 +1,5 @@
 import * as React from "react"
-import { isStorageAvailable, loadError } from "@/services/StorageService"
+import { clearDB, isStorageAvailable, loadError } from "@/services/StorageService"
 import { useTrackerStore } from "@/store/trackerStore"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import {
@@ -18,18 +18,22 @@ import MainPanel from "./MainPanel"
 export function AppShell() {
   const selectedTaskId = useTrackerStore((s) => s.selectedTaskId)
   const setSelectedTask = useTrackerStore((s) => s.setSelectedTask)
+  const hydrateFromStorage = useTrackerStore((s) => s.hydrateFromStorage)
 
   const [showRecoveryDialog, setShowRecoveryDialog] = React.useState(loadError)
 
-  function handleResetToEmpty() {
-    localStorage.removeItem("task-tracker")
+  React.useEffect(() => {
+    void hydrateFromStorage()
+  }, [hydrateFromStorage])
+
+  async function handleResetToEmpty() {
+    await clearDB()
     window.location.reload()
   }
 
-  function handleDownloadCorruptData() {
-    const raw = localStorage.getItem("task-tracker")
-    if (!raw) return
-
+  async function handleDownloadCorruptData() {
+    await useTrackerStore.getState().hydrateFromStorage()
+    const raw = JSON.stringify(useTrackerStore.getState(), null, 2)
     const blob = new Blob([raw], { type: "application/json" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")

@@ -159,6 +159,7 @@ export interface TrackerStore extends TrackerState {
   setSelectedTask(id: ID | null): void;
   setActiveFilters(filters: FilterCriteria): void;
   setActiveSort(sort: SortCriteria): void;
+  hydrateFromStorage(): Promise<void>;
 }
 
 // ─── Persist helper ───────────────────────────────────────────────────────────
@@ -180,26 +181,12 @@ function persist(state: TrackerStore): void {
 
 // ─── Hydrate initial state ────────────────────────────────────────────────────
 
-function buildInitialState(): TrackerState {
-  const loaded = StorageService.load();
-  if (loaded === null) {
-    return EMPTY_TRACKER_STATE;
-  }
-  // Merge built-in views with any saved views from storage
-  return {
-    ...loaded,
-    savedViews: mergeWithBuiltInViews(loaded.savedViews),
-  };
-}
-
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useTrackerStore = create<TrackerStore>()((set, get) => {
-  const initial = buildInitialState();
-
   return {
     // ── Initial state ─────────────────────────────────────────────────────────
-    ...initial,
+    ...EMPTY_TRACKER_STATE,
 
     // UI state
     selectedProjectId: null,
@@ -719,6 +706,16 @@ export const useTrackerStore = create<TrackerStore>()((set, get) => {
 
     setActiveSort(sort: SortCriteria): void {
       set({ activeSort: sort });
+    },
+
+    async hydrateFromStorage(): Promise<void> {
+      const loaded = await StorageService.load();
+      if (loaded === null) return;
+
+      set({
+        ...loaded,
+        savedViews: mergeWithBuiltInViews(loaded.savedViews),
+      });
     },
   };
 });
