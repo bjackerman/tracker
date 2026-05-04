@@ -8,6 +8,7 @@ const DB_NAME = "task-tracker-db";
 const DB_VERSION = 1;
 const STORE_NAME = "state";
 const STATE_KEY = "tracker";
+const ASSIGNEE_KEY = "assignee";
 
 // ─── isStorageAvailable ───────────────────────────────────────────────────────
 
@@ -179,6 +180,60 @@ export async function clearDB(): Promise<void> {
       resolve();
     };
 
+    request.onerror = () => {
+      db.close();
+      resolve();
+    };
+  });
+}
+
+export async function loadAssignee(): Promise<string | null> {
+  if (!isStorageAvailable) return null;
+
+  let db: IDBDatabase;
+  try {
+    db = await openDB();
+  } catch {
+    return null;
+  }
+
+  return new Promise((resolve) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.get(ASSIGNEE_KEY);
+
+    request.onsuccess = (event) => {
+      db.close();
+      const raw = (event.target as IDBRequest).result;
+      resolve(typeof raw === "string" ? raw : null);
+    };
+
+    request.onerror = () => {
+      db.close();
+      resolve(null);
+    };
+  });
+}
+
+export async function saveAssignee(value: string | null): Promise<void> {
+  if (!isStorageAvailable) return;
+
+  let db: IDBDatabase;
+  try {
+    db = await openDB();
+  } catch {
+    return;
+  }
+
+  return new Promise((resolve) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    const request = value && value.trim() ? store.put(value.trim(), ASSIGNEE_KEY) : store.delete(ASSIGNEE_KEY);
+
+    request.onsuccess = () => {
+      db.close();
+      resolve();
+    };
     request.onerror = () => {
       db.close();
       resolve();
